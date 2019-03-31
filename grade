@@ -1,0 +1,95 @@
+//AFSAN-55
+
+mysql> create database calculation;
+Query OK, 1 row affected (0.00 sec)
+
+mysql> use calculation;
+Database changed
+mysql> DROP TABLE TEST;
+Query OK, 0 rows affected (0.18 sec)
+
+mysql> CREATE TABLE TEST(ROLLNO INT(10) PRIMARY KEY,NAME CHAR(20),M1 FLOAT(5,2),M2 FLOAT(5,2),M3 FLOAT(5,2),M4 FLOAT(5,2),M5 FLOAT(5,2),M6 FLOAT(5,2),TOTAL FLOAT(5,2),GRADE CHAR(2));
+Query OK, 0 rows affected (0.25 sec)
+
+mysql> DESCRIBE TEST;                                                         
++--------+------------+------+-----+---------+-------+
+| Field  | Type       | Null | Key | Default | Extra |
++--------+------------+------+-----+---------+-------+
+| ROLLNO | int(10)    | NO   | PRI | NULL    |       |
+| NAME   | char(20)   | YES  |     | NULL    |       |
+| M1     | float(5,2) | YES  |     | NULL    |       |
+| M2     | float(5,2) | YES  |     | NULL    |       |
+| M3     | float(5,2) | YES  |     | NULL    |       |
+| M4     | float(5,2) | YES  |     | NULL    |       |
+| M5     | float(5,2) | YES  |     | NULL    |       |
+| M6     | float(5,2) | YES  |     | NULL    |       |
+| TOTAL  | float(5,2) | YES  |     | NULL    |       |
+| GRADE  | char(2)    | YES  |     | NULL    |       |
++--------+------------+------+-----+---------+-------+
+10 rows in set (0.01 sec)
+
+mysql> INSERT INTO TEST(ROLLNO,NAME,M1,M2,M3,M4,M5,M6) VALUES(1,"A",90,98,95,94,96,99),(2,"B",85,76,77,90,94,84);
+Query OK, 2 rows affected (0.05 sec)
+Records: 2  Duplicates: 0  Warnings: 0
+
+mysql> INSERT INTO TEST(ROLLNO,NAME,M1,M2,M3,M4,M5,M6) VALUES(3,"C",66,77,88,90,91,69),(4,"D",80,70,60,55,59,74);
+Query OK, 2 rows affected (0.05 sec)
+Records: 2  Duplicates: 0  Warnings: 0
+
+mysql> SELECT * FROM TEST;
++--------+------+-------+-------+-------+-------+-------+-------+-------+-------+
+| ROLLNO | NAME | M1    | M2    | M3    | M4    | M5    | M6    | TOTAL | GRADE |
++--------+------+-------+-------+-------+-------+-------+-------+-------+-------+
+|      1 | A    | 90.00 | 98.00 | 95.00 | 94.00 | 96.00 | 99.00 |  NULL | NULL  |
+|      2 | B    | 85.00 | 76.00 | 77.00 | 90.00 | 94.00 | 84.00 |  NULL | NULL  |
+|      3 | C    | 66.00 | 77.00 | 88.00 | 90.00 | 91.00 | 69.00 |  NULL | NULL  |
+|      4 | D    | 80.00 | 70.00 | 60.00 | 55.00 | 59.00 | 74.00 |  NULL | NULL  |
++--------+------+-------+-------+-------+-------+-------+-------+-------+-------+
+4 rows in set (0.00 sec)
+mysql> delimiter #
+mysql>  drop procedure if exists grade;
+    -> create procedure grade(r int)
+    -> begin
+    -> declare done int default 0;
+    -> declare nam varchar(20);
+    -> declare g varchar(2);
+    -> declare a,b,c,d,e,f,t float(5,2);
+    ->  declare cur cursor for select ROLLNO,NAME,M1,M2,M3,M4,M5,M6 from TEST;
+    ->  declare continue handler for not found set done=1;
+    -> open cur;
+    -> readloop:loop
+    -> fetch cur into r,nam,a,b,c,d,e,f;
+    -> set t=a+b+c+d+e+f;
+    -> if t>480 then
+    -> set g='A';
+    -> if t>400 then
+    -> set g='B+';
+    -> if t>360 then
+    -> set g='B';
+    -> if t>300 then
+    -> set g='c';
+    -> else
+    -> set g='F';
+    -> end if;
+    -> end if;
+    -> end if;
+    -> end if;
+    ->  if done=1 then
+    -> leave readloop;
+    -> end if;
+    -> update TEST set GRADE=g,TOTAL=t where ROLLNO=r;
+    -> end loop;
+    -> close cur;
+    -> select ROLLNO,TOTAL,GRADE FROM TEST WHERE ROLLNO=r;
+    -> end #
+Query OK, 0 rows affected (0.01 sec)
+mysql> call grade(4)#
++--------+--------+-------+
+| ROLLNO | TOTAL  | GRADE |
++--------+--------+-------+
+|      4 | 398.00 | B    |
++--------+--------+-------+
+1 row in set (0.33 sec)
+
+Query OK, 0 rows affected (0.33 sec)
+
